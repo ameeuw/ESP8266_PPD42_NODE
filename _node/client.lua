@@ -1,5 +1,6 @@
 -- ESP8266 PPD42 sensor node
 
+-- Start configuration server.
 function startConfig()
      print('Config -> start webserver')
      print(node.heap())
@@ -47,7 +48,7 @@ function ppd42read()
 
 end
 
--- Connect to set server (to be replaced with mqtt or similar)
+-- Connect to set server (to be replaced with mqtt, REST-call or similar)
 function runClient()
      node.output(function(str) if str=="DNS Fail!\n" then runClient() blink(pin_r, 2, 250) end end, 1)
      sk=net.createConnection(net.TCP, 0)
@@ -61,6 +62,69 @@ function runClient()
      sk:on("receive", parseInput)
      sk:on("disconnection", runClient)
      sk:on("connection", function(sck) print("Connected.") blink(pin_g,3, 250) end)
+end
+
+-- GET request code to PHP-Script
+function sendData(sensor, value)
+	if sensor~=nil and value~=nil then
+		get = "/?s=" .. sensor .. "&v=" .. value
+	end
+	
+	print(get)
+
+	conn=net.createConnection(net.TCP, 0)
+    
+	conn:on("receive", function(conn, payload)
+		if parseXML(payload, cmd)==0 then
+			
+			if cmd==1001 then
+				blink(pin_led,3,100)
+			end
+			
+			if cmd==2001 then
+				if par==1 then
+					recording = 1
+					blink(pin_led,-1,800)
+				else
+					recording = 0
+					tmr.stop(0)
+				end
+			end
+			
+			if cmd==3001 then
+				if par==1 then
+					mode = 1
+					blink(pin_led,3,200)
+				else
+					mode = 0
+					blink(pin_led,2,200)
+				end
+			end
+		end
+	end )
+	
+    conn:connect(80,host)
+    conn:send("GET "..get.." HTTP/1.1\r\nHost: "..host.."putData.php\r\n"
+        .."Connection: keep-alive\r\nAccept: */*\r\n\r\n")
+end
+
+-- Parse response whether command has succeeded
+function parseXML(response, cmd)
+	-- print(response)
+	
+	if response~=nil then
+		Cmd = response:match("<Cmd>([^,]+)</Cmd>")
+		Status = response:match("<Status>([^,]+)</Status>")
+	end
+	
+	-- If Status for corresponding command is 0, command was successful
+	if Cmd~=nil and Status~=nil then
+		if tonumber(cmd)==tonumber(Cmd) and tonumber(Status)==tonumber(0) then
+			return 0
+		else
+			return 1
+		end
+	end
 end
 
 -- Blink LED for status feedback
