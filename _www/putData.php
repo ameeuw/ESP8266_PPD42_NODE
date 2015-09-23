@@ -13,9 +13,21 @@ echo $sensor;
 echo "<br>Value: ";
 echo $value;
 
+
 // Open according datafile and append timestamp, sensor and value
-$handle = fopen($filename, "a");
-$line = array($timestamp,$sensor, $value);
-fputcsv($handle, $line);
+if (file_exists($filename))
+{
+	$handle = fopen($filename, "a");
+	$line = array($timestamp,$sensor, $value);
+	fputcsv($handle, $line);
+}
+else
+{
+	$handle = fopen($filename, "a");
+	$line = array('timestamp', 'sensor', 'value');
+	fputcsv($handle, $line);
+	$line = array($timestamp,$sensor, $value);
+	fputcsv($handle, $line);
+}
 fclose($handle);
 ?>
