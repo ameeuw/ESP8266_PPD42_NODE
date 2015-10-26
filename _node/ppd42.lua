@@ -19,4 +19,4 @@ function PPD.readValue(pin)
 end
 
 -- expose module
-return PPD 
+return PPD

@@ -1,4 +1,5 @@
 <?php
+// .../putData.php?sensor=s1$value=
 // Write values and sensor id into variables
 $date = date_create();
 $timestamp = date_timestamp_get($date);
